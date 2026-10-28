@@ -58,9 +58,11 @@ namespace GymManagementPL
 				//Config.Password.RequiredLength = 6;
 				//Config.Password.RequireLowercase = true;
 				//Config.Password.RequireUppercase = true;
-				Config.User.RequireUniqueEmail = true;
-                Config.Lockout.MaxFailedAccessAttempts = 5;
-                Config.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(2);
+
+
+				//Config.User.RequireUniqueEmail = true;
+                //Config.Lockout.MaxFailedAccessAttempts = 5;
+                //Config.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(2);
 
             }).AddEntityFrameworkStores<GymDbContext>();
 

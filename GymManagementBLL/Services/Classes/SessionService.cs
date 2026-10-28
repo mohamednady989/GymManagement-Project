@@ -69,9 +69,10 @@ namespace GymManagementBLL.Services.Classes
             if (category is null)
                 return Result.NotFound("Category not found.");
 
-            var isValidSpecialty = Enum.TryParse<Specialties>(category.CategoryName, true, out var categorySpecialty);
-
-            if (!isValidSpecialty || trainer.Specialties != categorySpecialty)
+            // Trainer.Specialties must match the session CategoryId.
+            // Compare by underlying integer values to avoid relying on enum names
+            // (category names such as "Cardio" or "Strength" may not match enum identifiers).
+            if ((int)trainer.Specialties != category.Id)
                 return Result.Validation("Cannot create this session for this trainer.");
 
             var session = _mapper.Map<SessionEntity>(model);
@@ -122,9 +123,8 @@ namespace GymManagementBLL.Services.Classes
             if (category is null)
                 return Result.NotFound("Category not found.");
 
-            var isValidSpecialty = Enum.TryParse<Specialties>(category.CategoryName, true, out var categorySpecialty);
-
-            if (!isValidSpecialty || trainer.Specialties != categorySpecialty)
+            // Ensure trainer specialty matches the session category by comparing underlying int values.
+            if ((int)trainer.Specialties != category.Id)
             {
                 return Result.Validation("This trainer does not match the session category.");
             }
@@ -145,8 +145,7 @@ namespace GymManagementBLL.Services.Classes
             var session = await repo.GetByIdAsync(sessionId, ct);
             if (session is null) return Result.NotFound("Session not found.");
 
-            if (session.EndDate >= DateTime.Now)
-                return Result.Fail("Cannot delete a session that has not yet ended.");
+            // Allow admins to delete sessions regardless of end date. Keep booking check below.
 
             var bookedCount = await _unitOfWork.SessionRepository.GetCountOfBookedSlotsAsync(sessionId, ct);
             if (bookedCount > 0)

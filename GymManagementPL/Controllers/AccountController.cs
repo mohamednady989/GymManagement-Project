@@ -26,27 +26,36 @@ namespace GymManagementPL.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
+            // Allow users to login using either their email or user name.
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user is null || string.IsNullOrEmpty(user.UserName))
+            if (user is null)
+            {
+                user = await _userManager.FindByNameAsync(model.Email);
+            }
+
+            if (user is null || string.IsNullOrWhiteSpace(user.UserName))
             {
                 ModelState.AddModelError(string.Empty, "Invalid email or password.");
                 return View(model);
             }
 
-            var result = await _signInManager.PasswordSignInAsync(
-                user.UserName, model.Password, model.RememberMe, lockoutOnFailure: true);
+            // Use CheckPasswordSignInAsync against the user object to avoid issues with
+            // username normalization and to support both email/username inputs.
+            var checkResult = await _signInManager.CheckPasswordSignInAsync(user, model.Password, lockoutOnFailure: true);
 
-            if (result.Succeeded)
+            if (checkResult.Succeeded)
             {
+                await _signInManager.SignInAsync(user, model.RememberMe);
                 _logger.LogInformation("User {UserId} signed in.", user.Id);
                 return RedirectToAction(nameof(HomeController.Index), "Home");
             }
-            if (result.IsLockedOut)
+
+            if (checkResult.IsLockedOut)
             {
                 _logger.LogWarning("User {UserId} is locked out.", user.Id);
                 ModelState.AddModelError(string.Empty, "This account is temporarily locked. Try again later.");
             }
-            else if (result.IsNotAllowed)
+            else if (checkResult.IsNotAllowed)
             {
                 ModelState.AddModelError(string.Empty, "Sign-in is not allowed for this account.");
             }
@@ -54,6 +63,7 @@ namespace GymManagementPL.Controllers
             {
                 ModelState.AddModelError(string.Empty, "Invalid email or password.");
             }
+
             return View(model);
         }
 
